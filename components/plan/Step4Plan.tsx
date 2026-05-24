@@ -29,66 +29,117 @@ type Props = {
   onNext: () => void;
 };
 
-/* ─── Drag handle icon ─────────────────────────────── */
-function DragHandle(props: React.HTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      {...props}
-      className="flex items-center justify-center w-5 shrink-0 touch-none cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 self-center"
-      tabIndex={-1}
-      aria-label="ドラッグして並び替え"
-    >
-      <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
-        <circle cx="3" cy="2" r="1.5" />
-        <circle cx="7" cy="2" r="1.5" />
-        <circle cx="3" cy="8" r="1.5" />
-        <circle cx="7" cy="8" r="1.5" />
-        <circle cx="3" cy="14" r="1.5" />
-        <circle cx="7" cy="14" r="1.5" />
-      </svg>
-    </button>
-  );
+/* ═══════════════════════════════════════════════
+   時刻ユーティリティ
+   ═══════════════════════════════════════════════ */
+
+/** "2時間" → 120, "1時間30分" → 90, "30分" → 30 */
+function parseDurationMins(duration: string): number {
+  if (!duration) return 0;
+  let total = 0;
+  const h = duration.match(/(\d+(?:\.\d+)?)時間/);
+  if (h) total += parseFloat(h[1]) * 60;
+  const m = duration.match(/(\d+)分/);
+  if (m) total += parseInt(m[1]);
+  return Math.round(total);
 }
 
-/* ─── Sortable slot row ────────────────────────────── */
-function SortableSlotRow({ slot, id }: { slot: Slot; id: string }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+/** "09:30" → 570, 解析不能なら null */
+function parseTimeMins(t: string): number | null {
+  const m = t.match(/^(\d{1,2}):(\d{2})$/);
+  return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : null;
+}
 
-  const isFlight = slot.transport === "飛行機";
+/** 570 → "09:30" */
+function fmtTime(mins: number): string {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
 
+const isFlight = (s: Slot) => s.transport === "飛行機";
+
+/**
+ * スロット配列を head / middle / tail に分割する
+ * - head: slots[0] が飛行機のとき
+ * - tail: slots[last] が飛行機のとき
+ * - middle: それ以外
+ */
+function splitSlots(slots: Slot[]) {
+  const head = slots.length > 0 && isFlight(slots[0]) ? slots[0] : null;
+  const tail =
+    slots.length > 1 && isFlight(slots[slots.length - 1])
+      ? slots[slots.length - 1]
+      : null;
+  const start = head ? 1 : 0;
+  const end = tail ? slots.length - 2 : slots.length - 1;
+  const middle = end >= start ? slots.slice(start, end + 1) : [];
+  return { head, middle, tail };
+}
+
+/**
+ * middle スロットを newMiddle 順に並び替え、
+ * head の終了時刻（または元の先頭スロット開始時刻）を起点に
+ * 各スロットの time を再計算して返す。
+ * head / tail は時刻固定。
+ */
+function reorderAndRecalc(
+  head: Slot | null,
+  originalMiddle: Slot[],
+  tail: Slot | null,
+  newMiddle: Slot[]
+): Slot[] {
+  let anchorMins: number;
+
+  if (head) {
+    const headStart = parseTimeMins(head.time);
+    if (headStart === null) {
+      // "前日発" などの特殊表記は時刻再計算をスキップ
+      return [...[head], ...newMiddle, ...(tail ? [tail] : [])];
+    }
+    anchorMins = headStart + parseDurationMins(head.duration);
+  } else if (originalMiddle.length > 0) {
+    // ヘッド便なし：元の先頭スロットの時刻を1日の開始時刻として固定
+    anchorMins = parseTimeMins(originalMiddle[0].time) ?? 9 * 60;
+  } else {
+    return [...(tail ? [tail] : [])];
+  }
+
+  const recalced = newMiddle.map((slot) => {
+    const newTime = fmtTime(anchorMins);
+    anchorMins += parseDurationMins(slot.duration);
+    return { ...slot, time: newTime };
+  });
+
+  return [
+    ...(head ? [head] : []),
+    ...recalced,
+    ...(tail ? [tail] : []),
+  ];
+}
+
+/* ═══════════════════════════════════════════════
+   スロットの表示コンポーネント
+   ═══════════════════════════════════════════════ */
+
+/** 時刻・スポット名・メタ情報の共通パーツ */
+function SlotContent({ slot }: { slot: Slot }) {
+  const flight = isFlight(slot);
   return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex gap-2 py-2.5 border-b border-gray-50 last:border-none ${
-        isDragging ? "opacity-50 bg-indigo-50/60 rounded-xl z-10" : ""
-      } ${isFlight ? "-mx-4 px-4 bg-sky-50/70" : ""}`}
-    >
-      <DragHandle {...attributes} {...listeners} />
-
-      {/* Time */}
+    <>
       <div
         className={`w-11 text-xs font-semibold shrink-0 pt-0.5 ${
-          isFlight ? "text-sky-500" : "text-gray-400"
+          flight ? "text-sky-500" : "text-gray-400"
         }`}
       >
         {slot.time}
       </div>
-
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          {isFlight && <span className="text-base leading-none">✈️</span>}
+          {flight && <span className="text-base leading-none">✈️</span>}
           <p
             className={`text-sm font-semibold leading-snug ${
-              isFlight ? "text-sky-700" : "text-gray-800"
+              flight ? "text-sky-700" : "text-gray-800"
             }`}
           >
             {slot.spot}
@@ -98,13 +149,13 @@ function SortableSlotRow({ slot, id }: { slot: Slot; id: string }) {
           {slot.duration && (
             <span className="text-xs text-gray-400">⏱ {slot.duration}</span>
           )}
-          {!isFlight && slot.transport && (
+          {!flight && slot.transport && (
             <span className="text-xs text-gray-400">🚌 {slot.transport}</span>
           )}
           {slot.cost > 0 && (
             <span
               className={`text-xs font-medium ${
-                isFlight ? "text-sky-600" : "text-gray-400"
+                flight ? "text-sky-600" : "text-gray-400"
               }`}
             >
               ¥{slot.cost.toLocaleString()}
@@ -117,11 +168,65 @@ function SortableSlotRow({ slot, id }: { slot: Slot; id: string }) {
           </p>
         )}
       </div>
+    </>
+  );
+}
+
+/** 固定スロット（head / tail フライト） — ドラッグ不可、青バー表示 */
+function PinnedSlotRow({ slot }: { slot: Slot }) {
+  return (
+    <div className="-mx-4 px-4 py-2.5 border-b border-gray-50 bg-sky-50/70 flex gap-2">
+      {/* ピン表示 */}
+      <div className="w-5 shrink-0 flex items-center justify-center self-stretch">
+        <div className="w-1 h-full min-h-[20px] bg-sky-300 rounded-full" />
+      </div>
+      <SlotContent slot={slot} />
     </div>
   );
 }
 
-/* ─── Hotel row (non-draggable, appended to each non-last day) ── */
+/** ドラッグ可能スロット */
+function SortableSlotRow({ slot, id }: { slot: Slot; id: string }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`flex gap-2 py-2.5 border-b border-gray-50 last:border-none ${
+        isDragging ? "opacity-50 bg-indigo-50/60 rounded-xl z-10 shadow-md" : ""
+      }`}
+    >
+      {/* ドラッグハンドル */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="w-5 shrink-0 touch-none cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 flex items-center justify-center self-center"
+        tabIndex={-1}
+        aria-label="ドラッグして並び替え"
+      >
+        <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+          <circle cx="3" cy="2" r="1.5" />
+          <circle cx="7" cy="2" r="1.5" />
+          <circle cx="3" cy="8" r="1.5" />
+          <circle cx="7" cy="8" r="1.5" />
+          <circle cx="3" cy="14" r="1.5" />
+          <circle cx="7" cy="14" r="1.5" />
+        </svg>
+      </button>
+      <SlotContent slot={slot} />
+    </div>
+  );
+}
+
+/** ホテル宿泊行（非ドラッグ、最終日以外の末尾に表示） */
 function HotelRow({ hotel }: { hotel: Itinerary["hotel"] }) {
   return (
     <div className="flex items-center gap-3 mt-1.5 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
@@ -138,12 +243,13 @@ function HotelRow({ hotel }: { hotel: Itinerary["hotel"] }) {
   );
 }
 
-/* ─── Day card with per-day DnD context ─────────────── */
+/* ═══════════════════════════════════════════════
+   DayCard — 1日ごとのカード
+   ═══════════════════════════════════════════════ */
 type DayCardProps = {
   dayPlan: DayPlan;
   isOpen: boolean;
   onToggle: () => void;
-  /** hotel を渡さない（null）= 最終日 → 宿泊行を非表示 */
   hotel: Itinerary["hotel"] | null;
   onReorder: (newSlots: Slot[]) => void;
 };
@@ -151,26 +257,25 @@ type DayCardProps = {
 function DayCard({ dayPlan, isOpen, onToggle, hotel, onReorder }: DayCardProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 8 },
-    })
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
   );
 
-  const slotIds = dayPlan.slots.map((_, i) => `d${dayPlan.day}-s${i}`);
+  const { head, middle, tail } = splitSlots(dayPlan.slots);
+  const middleIds = middle.map((_, i) => `d${dayPlan.day}-m${i}`);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIdx = slotIds.indexOf(String(active.id));
-    const newIdx = slotIds.indexOf(String(over.id));
+    const oldIdx = middleIds.indexOf(String(active.id));
+    const newIdx = middleIds.indexOf(String(over.id));
     if (oldIdx !== -1 && newIdx !== -1) {
-      onReorder(arrayMove(dayPlan.slots, oldIdx, newIdx));
+      const newMiddle = arrayMove(middle, oldIdx, newIdx);
+      onReorder(reorderAndRecalc(head, middle, tail, newMiddle));
     }
   };
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-      {/* Header */}
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
@@ -186,22 +291,32 @@ function DayCard({ dayPlan, isOpen, onToggle, hotel, onReorder }: DayCardProps) 
         <span className="text-gray-400 text-sm">{isOpen ? "▲" : "▼"}</span>
       </button>
 
-      {/* Expanded content */}
       {isOpen && (
         <div className="px-4 pb-3 border-t border-gray-100">
+          {/* 先頭フライト（固定） */}
+          {head && <PinnedSlotRow slot={head} />}
+
+          {/* 並び替え可能な中間スロット */}
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={slotIds} strategy={verticalListSortingStrategy}>
-              {dayPlan.slots.map((slot, i) => (
-                <SortableSlotRow key={slotIds[i]} slot={slot} id={slotIds[i]} />
+            <SortableContext items={middleIds} strategy={verticalListSortingStrategy}>
+              {middle.map((slot, i) => (
+                <SortableSlotRow
+                  key={middleIds[i]}
+                  slot={slot}
+                  id={middleIds[i]}
+                />
               ))}
             </SortableContext>
           </DndContext>
 
-          {/* Hotel row */}
+          {/* 末尾フライト（固定） */}
+          {tail && <PinnedSlotRow slot={tail} />}
+
+          {/* ホテル宿泊行 */}
           {hotel && <HotelRow hotel={hotel} />}
         </div>
       )}
@@ -209,7 +324,9 @@ function DayCard({ dayPlan, isOpen, onToggle, hotel, onReorder }: DayCardProps) 
   );
 }
 
-/* ─── Main component ─────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   Step4Plan — メインコンポーネント
+   ═══════════════════════════════════════════════ */
 export default function Step4Plan({ plan, onUpdateItinerary, onNext }: Props) {
   const [loading, setLoading] = useState(!plan.itinerary);
   const [error, setError] = useState<string | null>(null);
@@ -223,7 +340,6 @@ export default function Step4Plan({ plan, onUpdateItinerary, onNext }: Props) {
 
   const country = getCountry(plan.destination ?? "");
 
-  // Sync when parent updates itinerary (generate / modify)
   useEffect(() => {
     if (plan.itinerary) setLocalItinerary(plan.itinerary);
   }, [plan.itinerary]);
@@ -294,7 +410,6 @@ export default function Step4Plan({ plan, onUpdateItinerary, onNext }: Props) {
     }
   };
 
-  /** 特定日のスロット並び順を更新する */
   const handleReorderDay = (dayIndex: number, newSlots: Slot[]) => {
     if (!localItinerary) return;
     const newDays = localItinerary.days.map((day, i) =>
@@ -371,14 +486,12 @@ export default function Step4Plan({ plan, onUpdateItinerary, onNext }: Props) {
         </div>
       )}
 
-      {/* 旅程（ドラッグソート対応） */}
+      {/* 旅程 */}
       {localItinerary && (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-1.5">
-            <p className="text-xs font-semibold text-gray-500">
-              旅程（タップで展開 · ⠿ドラッグで並び替え）
-            </p>
-          </div>
+          <p className="text-xs font-semibold text-gray-500">
+            旅程（タップで展開 · ドラッグで並び替え · ✈️は固定）
+          </p>
           {localItinerary.days.map((day, dayIndex) => (
             <DayCard
               key={day.day}
