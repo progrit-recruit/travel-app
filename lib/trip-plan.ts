@@ -26,6 +26,7 @@ export type TripPlan = {
   selectedDestinations: string[];
   // STEP 2
   destination: string | null;
+  region: string | null;
   tripType: string | null;
   tripDays: number;
   // STEP 3
@@ -45,6 +46,7 @@ export const CONFIRMED_TRIP_KEY = "confirmed_trip";
 export const emptyTripPlan: TripPlan = {
   selectedDestinations: [],
   destination: null,
+  region: null,
   tripType: null,
   tripDays: 5,
   interests: [],

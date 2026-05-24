@@ -140,9 +140,11 @@ export default function PlanFlow() {
           <Step2Narrow
             selectedDestinations={plan.selectedDestinations}
             destination={plan.destination}
+            region={plan.region}
             tripType={plan.tripType}
             tripDays={plan.tripDays}
-            onSelectDestination={(code) => update({ destination: code })}
+            onSelectDestination={(code) => update({ destination: code, region: null, tripType: null })}
+            onSelectRegion={(r) => update({ region: r, tripType: null })}
             onSelectTripType={(type, days) => update({ tripType: type, tripDays: days })}
             onNext={next}
             onBack={back}
