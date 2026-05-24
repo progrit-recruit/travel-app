@@ -2,9 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { loadProfile } from "@/lib/user-profile";
 import { loadConfirmedTrip, loadTripPlan } from "@/lib/trip-plan";
 import { getCountry } from "@/lib/country-data";
+
+const SUPPORT_TOOLS = [
+  { href: "/checklist", icon: "✅", label: "チェック\nリスト", bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700" },
+  { href: "/translate", icon: "🌐", label: "オフライン\n翻訳", bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700" },
+  { href: "/booking", icon: "🔖", label: "予約\nサービス", bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-700" },
+  { href: "/map", icon: "🗺️", label: "マップ", bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700" },
+  { href: "/ai", icon: "🤖", label: "AIトラブル\n相談", bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700" },
+];
 
 /* ── Mock data ─────────────────────────────────── */
 
@@ -395,6 +404,25 @@ export default function MyPageTab() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* ── 旅のサポートツール ── */}
+      <div>
+        <SectionHeader emoji="🛠️" title="旅のサポートツール" sub="旅先でいつでも使える機能" />
+        <div className="grid grid-cols-5 gap-2">
+          {SUPPORT_TOOLS.map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border ${t.bg} ${t.border} active:scale-95 transition-transform`}
+            >
+              <span className="text-2xl">{t.icon}</span>
+              <p className={`text-center text-xs font-medium leading-tight whitespace-pre-line ${t.text}`}>
+                {t.label}
+              </p>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* ── 旅のアルバム ── */}

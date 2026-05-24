@@ -437,16 +437,66 @@ function buildDefaultTemplate(
   };
 }
 
+/** フライト時間文字列から出発時刻を逆算 */
+function getDepartureTime(durationStr: string): string {
+  const h = parseInt(durationStr.match(/(\d+)/)?.[1] ?? "8");
+  if (h <= 5) return "09:30";
+  if (h <= 9) return "07:30";
+  return "前日発"; // 長距離便は前日夜出発
+}
+
+/** 最終日に帰国フライトスロットが既にあるか確認 */
+function hasReturnFlightSlot(slots: Itinerary["days"][number]["slots"]): boolean {
+  return slots.some(
+    (s) =>
+      s.transport === "飛行機" &&
+      (s.spot.includes("日本") || s.spot.includes("帰国") || s.spot.includes("帰着"))
+  );
+}
+
 /**
  * 国コードと旅行日数から確定的な旅程を返す
- * tripDays に合わせて days を切り詰め/調整し、costs を再計算する
+ * - 出発フライトを1日目の最初のスロットに自動挿入
+ * - 最終日に帰国便スロットが無ければ追加
+ * - tripDays に合わせて days を切り詰め/調整し costs を再計算する
  */
 export function getMockItinerary(destination: string, tripDays: number): Itinerary {
   const tpl = TEMPLATES[destination] ?? buildDefaultTemplate(destination, tripDays);
   const nights = Math.max(1, tripDays - 1);
 
-  // days をスライス（tripDays 日分）
-  const days = tpl.days.slice(0, tripDays);
+  const slicedDays = tpl.days.slice(0, tripDays);
+
+  // 出発フライトスロット（1日目先頭に挿入）
+  const departureSlot: Itinerary["days"][number]["slots"][number] = {
+    time: getDepartureTime(tpl.flight.duration),
+    spot: tpl.flight.airline,
+    duration: tpl.flight.duration,
+    transport: "飛行機",
+    cost: tpl.flight.cost,
+    comment: "日本出発 → 現地へ。空港には搭乗2〜3時間前に到着を",
+  };
+
+  const days: Itinerary["days"] = slicedDays.map((day, i) => {
+    // 1日目：出発便スロットを先頭に追加
+    if (i === 0) {
+      return { ...day, slots: [departureSlot, ...day.slots] };
+    }
+    // 最終日：帰国便スロットが無ければ末尾に追加
+    if (i === slicedDays.length - 1) {
+      if (!hasReturnFlightSlot(day.slots)) {
+        const returnSlot: Itinerary["days"][number]["slots"][number] = {
+          time: "15:00",
+          spot: `${tpl.flight.airline}（帰国便）`,
+          duration: tpl.flight.duration,
+          transport: "飛行機",
+          cost: 0,
+          comment: "現地発 → 日本帰着",
+        };
+        return { ...day, slots: [...day.slots, returnSlot] };
+      }
+    }
+    return day;
+  });
 
   const hotelTotal = tpl.hotel.cost_per_night * nights;
   const localTotal = tpl.localCostPerDay * tripDays;

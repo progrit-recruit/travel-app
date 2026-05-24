@@ -12,20 +12,42 @@ type Props = {
 };
 
 function SlotRow({ slot }: { slot: DayPlan["slots"][number] }) {
+  const isFlight = slot.transport === "飛行機";
   return (
-    <div className="flex gap-3 py-2 border-b border-gray-50 last:border-none">
-      <div className="w-12 text-xs text-gray-400 font-medium shrink-0 pt-0.5">{slot.time}</div>
+    <div
+      className={`flex gap-3 py-2.5 border-b border-gray-50 last:border-none ${
+        isFlight ? "-mx-4 px-4 bg-sky-50/70" : ""
+      }`}
+    >
+      <div
+        className={`w-12 text-xs font-semibold shrink-0 pt-0.5 ${
+          isFlight ? "text-sky-500" : "text-gray-400"
+        }`}
+      >
+        {slot.time}
+      </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800 leading-snug">{slot.spot}</p>
+        <div className="flex items-center gap-1.5">
+          {isFlight && <span className="text-base leading-none">✈️</span>}
+          <p
+            className={`text-sm font-semibold leading-snug ${
+              isFlight ? "text-sky-700" : "text-gray-800"
+            }`}
+          >
+            {slot.spot}
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2 mt-0.5">
           {slot.duration && (
             <span className="text-xs text-gray-400">⏱ {slot.duration}</span>
           )}
-          {slot.transport && (
+          {!isFlight && slot.transport && (
             <span className="text-xs text-gray-400">🚌 {slot.transport}</span>
           )}
           {slot.cost > 0 && (
-            <span className="text-xs text-gray-400">¥{slot.cost.toLocaleString()}</span>
+            <span className={`text-xs font-medium ${isFlight ? "text-sky-600" : "text-gray-400"}`}>
+              ¥{slot.cost.toLocaleString()}
+            </span>
           )}
         </div>
         {slot.comment && (
@@ -158,13 +180,15 @@ export default function Step4Plan({ plan, onUpdateItinerary, onNext }: Props) {
         )}
       </div>
 
-      {/* フライト・ホテル情報 */}
+      {/* ホテル情報（フライトは旅程1日目に組み込み済み） */}
       {itinerary && (
         <div className="flex gap-2">
-          <div className="flex-1 bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs">
-            <p className="font-semibold text-blue-700 mb-0.5">✈️ フライト</p>
-            <p className="text-gray-700">{itinerary.flight.airline}</p>
-            <p className="text-gray-500">{itinerary.flight.duration} · ¥{itinerary.flight.cost.toLocaleString()}</p>
+          <div className="flex-1 bg-sky-50 border border-sky-100 rounded-xl px-3 py-2.5 text-xs flex items-center gap-2">
+            <span className="text-base">✈️</span>
+            <div>
+              <p className="font-semibold text-sky-700">フライト</p>
+              <p className="text-gray-500 mt-0.5">旅程の1日目・最終日に含まれています</p>
+            </div>
           </div>
           <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-xs">
             <p className="font-semibold text-emerald-700 mb-0.5">🏨 ホテル</p>

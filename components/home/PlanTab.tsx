@@ -1,46 +1,11 @@
 import Link from "next/link";
 
-const features = [
-  {
-    href: "/checklist",
-    icon: "✅",
-    title: "旅行前チェックリスト",
-    description: "必要な準備を漏れなく確認",
-    color: "bg-emerald-50 border-emerald-200",
-    iconBg: "bg-emerald-100",
-  },
-  {
-    href: "/translate",
-    icon: "🌐",
-    title: "オフライン翻訳",
-    description: "ネット不要で言語を翻訳",
-    color: "bg-blue-50 border-blue-200",
-    iconBg: "bg-blue-100",
-  },
-  {
-    href: "/booking",
-    icon: "🔖",
-    title: "予約サービス一覧",
-    description: "ホテル・eSIM・保険・航空券・両替",
-    color: "bg-rose-50 border-rose-200",
-    iconBg: "bg-rose-100",
-  },
-  {
-    href: "/map",
-    icon: "🗺️",
-    title: "マップ",
-    description: "見たエリアは自動オフライン保存",
-    color: "bg-orange-50 border-orange-200",
-    iconBg: "bg-orange-100",
-  },
-  {
-    href: "/ai",
-    icon: "🤖",
-    title: "AIトラブル相談",
-    description: "困ったときにAIに相談",
-    color: "bg-purple-50 border-purple-200",
-    iconBg: "bg-purple-100",
-  },
+const STEPS = [
+  { n: 1, icon: "🌍", title: "3D地球儀で行き先を選ぶ" },
+  { n: 2, icon: "📍", title: "エリア・旅スタイルを絞り込む" },
+  { n: 3, icon: "🎯", title: "こだわりを入力する" },
+  { n: 4, icon: "🤖", title: "AIが旅程を自動生成" },
+  { n: 5, icon: "✅", title: "予約内容を確認・確定" },
 ];
 
 export default function PlanTab() {
@@ -61,26 +26,24 @@ export default function PlanTab() {
         </div>
       </Link>
 
-      <p className="text-gray-500 text-sm mb-3">旅のサポートツール</p>
-
-      <div className="flex flex-col gap-3">
-        {features.map((f) => (
-          <Link
-            key={f.href}
-            href={f.href}
-            className={`flex items-center gap-4 p-4 rounded-2xl border transition-transform active:scale-95 ${f.color}`}
+      {/* 計画の流れ */}
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <p className="text-xs font-bold text-gray-500">📋 5ステップで旅程が完成</p>
+        </div>
+        {STEPS.map((s, i) => (
+          <div
+            key={s.n}
+            className={`flex items-center gap-3 px-4 py-3 ${
+              i < STEPS.length - 1 ? "border-b border-gray-50" : ""
+            }`}
           >
-            <div
-              className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${f.iconBg}`}
-            >
-              {f.icon}
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">{f.title}</p>
-              <p className="text-sm text-gray-500">{f.description}</p>
-            </div>
-            <span className="text-gray-400">›</span>
-          </Link>
+            <span className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold flex items-center justify-center shrink-0">
+              {s.n}
+            </span>
+            <span className="text-lg leading-none">{s.icon}</span>
+            <span className="text-sm text-gray-700">{s.title}</span>
+          </div>
         ))}
       </div>
     </div>
