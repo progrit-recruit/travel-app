@@ -6,7 +6,7 @@ export default function BookingPage() {
     <main className="flex flex-col min-h-screen">
       <header className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-lg mx-auto flex items-center gap-3">
-          <Link href="/" className="text-gray-400 hover:text-gray-600 text-lg">
+          <Link href="/mypage" className="text-gray-400 hover:text-gray-600 text-lg">
             ‹
           </Link>
           <div>
