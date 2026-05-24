@@ -1,4 +1,5 @@
 import Link from "next/link";
+import OnboardingGate from "@/components/OnboardingGate";
 
 const features = [
   {
@@ -46,6 +47,7 @@ const features = [
 export default function Home() {
   return (
     <main className="flex flex-col min-h-screen">
+      <OnboardingGate />
       <header className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="max-w-lg mx-auto">
           <h1 className="text-2xl font-bold text-gray-900">✈️ TravelReady</h1>
@@ -54,7 +56,22 @@ export default function Home() {
       </header>
 
       <div className="flex-1 px-4 py-6 max-w-lg mx-auto w-full">
-        <p className="text-gray-600 mb-6">何をしますか？</p>
+        {/* メインCTA：旅を計画する */}
+        <Link
+          href="/plan"
+          className="flex items-center gap-4 p-5 rounded-2xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-blue-50 mb-5 transition-transform active:scale-95"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-indigo-500 flex items-center justify-center text-3xl shadow-md">
+            🌍
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-gray-900 text-base">旅を計画する</p>
+            <p className="text-sm text-indigo-600 font-medium">AIが旅程を自動生成 →</p>
+            <p className="text-xs text-gray-400 mt-0.5">行き先・こだわり・予算から最適プラン</p>
+          </div>
+        </Link>
+
+        <p className="text-gray-500 text-sm mb-3">旅のサポートツール</p>
 
         <div className="flex flex-col gap-3">
           {features.map((f) => (
