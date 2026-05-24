@@ -8,8 +8,8 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "TravelReady - 海外旅行サポート",
-  description: "オフライン対応の海外旅行サポートアプリ",
+  title: "fitrip - あなたの理想の旅を、自由にリメイクしよう",
+  description: "行き先・こだわり・スタイルに合わせてAIが最適な旅程を提案するトラベルアプリ",
 };
 
 export default function RootLayout({

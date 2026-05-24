@@ -30,9 +30,9 @@ export default function Home() {
             className="text-6xl font-bold text-slate-800 tracking-tight"
             style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: "italic" }}
           >
-            fittrip
+            fitrip
           </h1>
-          <p className="text-sm text-slate-600 mt-2 tracking-[0.3em]">ー フィットリ ー</p>
+          <p className="text-sm text-slate-600 mt-2 tracking-[0.3em]">ー フィトリップ ー</p>
         </div>
 
         {/* Divider */}

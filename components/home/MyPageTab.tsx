@@ -337,7 +337,7 @@ export default function MyPageTab() {
           </div>
           <div className="flex-1">
             <p className="text-lg font-bold">{displayName} さん</p>
-            <p className="text-xs text-indigo-200 mt-0.5">TravelReady メンバー</p>
+            <p className="text-xs text-indigo-200 mt-0.5">fitrip メンバー</p>
           </div>
           <button
             onClick={() => router.push("/onboarding")}
@@ -367,29 +367,45 @@ export default function MyPageTab() {
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-3xl">{tripData.flag}</span>
-              <div>
+              <div className="flex-1">
                 <p className="font-bold text-gray-900">{tripData.name} · {tripData.area}</p>
                 <p className="text-xs text-emerald-600 font-medium">✅ 予約確定済み · {tripData.days}日間</p>
               </div>
             </div>
             {tripData.cost && (
-              <p className="text-sm font-semibold text-gray-700">合計 ¥{tripData.cost.toLocaleString()}</p>
+              <p className="text-sm font-semibold text-gray-700 mb-3">合計 ¥{tripData.cost.toLocaleString()}</p>
             )}
+            <button
+              onClick={() => router.push("/itinerary")}
+              className="w-full py-2 bg-emerald-500 text-white text-xs font-semibold rounded-xl active:scale-95 transition-transform"
+            >
+              📋 旅程の詳細を見る
+            </button>
           </div>
         )}
         {tripData.type === "planning" && (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex items-center gap-3">
-            <span className="text-3xl">{tripData.flag}</span>
-            <div className="flex-1">
-              <p className="font-bold text-gray-900">{tripData.name} · {tripData.area}</p>
-              <p className="text-xs text-indigo-600 font-medium">⏳ 計画中 · {tripData.days}日間</p>
+          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-3xl">{tripData.flag}</span>
+              <div className="flex-1">
+                <p className="font-bold text-gray-900">{tripData.name} · {tripData.area}</p>
+                <p className="text-xs text-indigo-600 font-medium">⏳ 計画中 · {tripData.days}日間</p>
+              </div>
             </div>
-            <button
-              onClick={() => router.push("/plan")}
-              className="text-xs bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-semibold"
-            >
-              続きへ
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push("/itinerary")}
+                className="flex-1 py-2 bg-white border border-indigo-300 text-indigo-600 text-xs font-semibold rounded-xl active:scale-95 transition-transform"
+              >
+                📋 旅程を見る
+              </button>
+              <button
+                onClick={() => router.push("/plan")}
+                className="flex-1 py-2 bg-indigo-500 text-white text-xs font-semibold rounded-xl active:scale-95 transition-transform"
+              >
+                ✏️ 続きへ
+              </button>
+            </div>
           </div>
         )}
         {tripData.type === "none" && (
